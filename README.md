@@ -87,7 +87,7 @@ Tutorial (in tutorial file):
 - asset/source: imports source code of the file as it is, injects it into JS bundle as a string of text
 
 
-#### Handling images with webpack
+#### asset/resource module type: Handling images with webpack 
 
 
 asset/resource module type 
@@ -111,11 +111,99 @@ asset/resource module type
     - if there is a rule applicable to jpg files, then it checks the type i.e. 'asset/resource' in this case. 
 
 
+#### publicPath (config option)
+
+
+- tells webpack which url to use to load all the generated files in the browser 
+  - i.e. static files liek images, you can tell the browser where those static files should be taken from
+- starting from webpack version 5 you don't need to worry about this option much anymore 
+- only worry about publicPath if your repo isn't that simple
+- by default webpack 5 ssets public path to `options: { publicPath: 'auto' }`
+- you can also use a relative class like `'/dist'`
+- there are some cases were pubicPath should be specified explicitly:
+  - Serving static files from cdn
+  - serving static files from express and using special url prefix to serve static files 
+  - when you use module configuration feature
+- if we deploy static files to CDN:
+  - publicPath would need to be 'http://some-cdn.com/' (or different local dev vs prod)
+
+
+#### asset/inline module type
+
+- inlines a file into the bundle as a data uri
+  - doesn't generate new file in output directory
+- used when importing small asset files (svgs)
+- not good for large files, can make JS file bundle much bigger. 
+  - i.e. the image we use is 197kb. With inline our asset bundle.js is 267kb. With resource its 4.7kb.  
+- asset/inline can be better than asset/resource:
+  - when using asset/resource, webpack generates a seperate file for every image you're using. it makes seperate http request for every image you display. if there are 20 images, browser makes 20 additional http requests to display them all.
+  - if they are huge, it makes sense to use asset/resource
+  - if you're using small icon svgs, it makes sense to use asset/inline and not make the http requests. 
+
+
+#### General asset module type 
+
+- a combination of inline and resource. 
+- set using type `asset` instead of `asset/resource` or `asset/inline`
+- webpack makes the decision for you if its resource or inline. greater than 8kb, its resource, less than and its inline.
+- you can change the 8kb threshhold using the parser/dataUrlCondition/maxSize property: 
+  ````js
+    rules: [
+    {
+      test: /\.(png|jpg)$/, 
+      type: 'asset',
+      parser: {
+        dataUrlCondition: {
+          maxSize: 3 * 1024 // 3kb
+        }
+      }
+    }
+  ````
+
+
+#### Asset/source module type 
+
+
+- reads the contents of the file into a javascript string and injects that string into the js bundle without any modifications
+- doesn't generate any file in the output directory 
+- example:
+  - moved in-line altText to its own .txt file 
+  - imported it into the add-image.js (where its used)
+  - added to the webpack config file: (we need a rule to teach webpack how to import txt files)
+  ````js
+    rules: [
+      {
+        test: /\.txt/,
+        type: 'asset/source' // this tells webpack when we import a .txt it reads it as asset/source
+      }
+    ]
+  ````
+
+
 ===
 
 
 ## Loaders
 
+
+#### What is webpack loader?
+
+- webpack allows you to import lots of different stuff in your code
+- possible because of features webpack provides 
+  - asset modules allow you to import images, fonts, plain text files
+  - loads allow you to import all other types of files that you can't import with asset modules
+- webpack designed to import all your dependencies into one or more files 
+  - dependencies are other javascript modules your main js requires to do its job 
+  - can import SASS, CSS etc 
+- loaders are javascript librarys which help us import all the above stuff 
+
+
+
+#### Handling CSS with webpack 
+
+
+- we can import CSS right into our JS code 
+- 
 
 ===
 

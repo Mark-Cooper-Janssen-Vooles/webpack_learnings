@@ -1,4 +1,4 @@
-function helloWorld() {
+const helloWorld = () => {
   console.log('Hello world');
 }
 
