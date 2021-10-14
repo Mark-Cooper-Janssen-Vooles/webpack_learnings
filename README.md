@@ -203,7 +203,32 @@ asset/resource module type
 
 
 - we can import CSS right into our JS code 
-- 
+- once we have a .js file using css and we create and import the css file, we need to teach webpack how to understand it
+  - we create a new rule in webpack config
+  - it affects all css files 
+  - asset modules uses "type", but we use "use" for this one
+  - we specify one or more loaders that will be used for our css files 
+  - every time it tries to import a css file, it uses both `css-loader` and `style-loader `
+    - css loader: reads contents of css and returns contents
+    - style-loader: takes css and injects it into page using style tags 
+    - style-loader bundles css into js bundle.js file 
+    - we can specify to make seperate files if we want 
+  - when we used asset modues, we didn't need to install additional npm files because webpack includes asset modules out of the box 
+  - when using loaders we need to install them explicitly (they're all npm packages we need to add )
+  - `npm install css-loader style-loader --save-dev`
+  ````js
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: [
+          'style-loader', 'css-loader'
+        ]
+      }
+    ]
+  }
+  ````
+  - when you npm build you can see in the dev tools, elements, the head tag has a style tag 
 
 ===
 
