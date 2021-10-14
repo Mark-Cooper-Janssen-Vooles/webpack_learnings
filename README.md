@@ -230,10 +230,71 @@ asset/resource module type
   ````
   - when you npm build you can see in the dev tools, elements, the head tag has a style tag 
 
+
+#### Handling SASS
+
+
+- change css file into .scss
+- change import in js 
+- add rule to webpack config: 
+  ````js
+  {
+    test: /\.scss$/,
+    use: [
+      'style-loader', 'css-loader', 'sass-loader'
+    ]
+  }
+  ````
+- note the order of loaders is important, webpack handles the order from right to left
+  - first it invokes sass-loader which converts sass to css 
+  - then it invokes css-loader which reads the contents into the js representation
+  - then style-loader which injects it into page with style tag
+- need to `npm install sass-loader sass --save-dev`
+
+
+#### Using latest JavaScript features with Babel
+
+
+- import other javascript files inside our javascript files
+  - we don't need an additional loader for this 
+- javascript language is based on acma script specification (new versions come out)
+  - browsers can be slow to implement these, we want to use them straight away, what do we do?
+  - tools can convert modern js code into older js code which is already supported by browers 
+  - the most popular js compiler is 'babel', which we will use 
+- need to create a new rule applicable to all js files except those in node_modules folder
+  ````js
+  module: {
+    rules: [
+      {
+        test: /\.js$/,
+        exclude: /node_modules/,
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets: [ '@babel/env' ],
+            plugins: [ '@babel/plugin-proposal-class-properties' ]
+          }
+        }
+      }
+    ]
+  }
+  ````
+  - we can specify extra options for any webpack loader, but the loader needs to support them
+  - first option is presets, `@babel/env` supports the latest javascript language updates
+  - second option is plugins. for this example we use `'@babel/plugin-proposal-class-properties'`
+  - `npm install @babel/core babel-loader @babel/preset-env @babel/plugin-proposal-class-properties --save-dev`
+
+
+- now when you run webpack it will use babel loader to import js files and cutting edge features will work on older browsers.
+
+
 ===
 
 
 ## Plugins
+
+
+#### What is Webpack Plugin?
 
 
 ===

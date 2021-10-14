@@ -1,10 +1,12 @@
-import './hello-world-button.css';
+import './hello-world-button.scss';
 
 class HelloWorldButton {
+  buttonCssClass = 'hello-world-button'; // most browsers don't yet support properties on classes
+
   render() {
     const button = document.createElement('button');
     button.innerHTML = 'Hello world';
-    button.classList.add('hello-world-button');
+    button.classList.add(this.buttonCssClass);
     const body = document.querySelector('body');
     button.onclick = () => {
       const p = document.createElement('p');
