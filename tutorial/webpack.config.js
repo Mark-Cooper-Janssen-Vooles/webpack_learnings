@@ -1,11 +1,15 @@
 const path = require('path'); // using the old way of importing modules - you have to
+const TerserPlugin = require('terser-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin')
 
 module.exports = {
   entry: './src/index.js', // entry point, which imports all other modules. webpack starts from this file when running the build process
   output: {
-    filename: 'bundle.js',
+    filename: 'bundle.[contenthash].js',
     path: path.resolve(__dirname, './dist'), // a library which creates an absolute path
-    publicPath: 'dist/'
+    publicPath: ''
   },
   mode: 'none',
   module: {
@@ -26,13 +30,13 @@ module.exports = {
       {
         test: /\.css$/,
         use: [
-          'style-loader', 'css-loader'
+          MiniCssExtractPlugin.loader, 'css-loader'
         ]
       },
       {
         test: /\.scss$/,
         use: [
-          'style-loader', 'css-loader', 'sass-loader'
+          MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'
         ]
       }, 
       {
@@ -45,7 +49,25 @@ module.exports = {
             plugins: [ '@babel/plugin-proposal-class-properties' ]
           }
         }
+      },
+      {
+        test: /\.hbs$/,
+        use: [
+          'handlebars-loader'
+        ]
       }
     ]
-  }
+  },
+  plugins: [
+    new TerserPlugin(),
+    new MiniCssExtractPlugin({
+      filename: 'styles.[contenthash].css',
+    }),
+    new CleanWebpackPlugin(),
+    new HtmlWebpackPlugin({
+      template: 'src/index.hbs',
+      title: 'Hello world',
+      description: 'Some description'
+    })
+  ]
 }
