@@ -297,6 +297,233 @@ asset/resource module type
 #### What is Webpack Plugin?
 
 
+- Plugins are additional javascript libraries that do everything that loaders cannot do 
+- We use loaders when we want to import different files (css loaders, xml loaders)
+- if you want to import something else? With plugins you can do more
+  - you can define global constants in whole app
+  - you can minifiy entire bundle so its smaller + faster
+  - you can generate other files besides bundle.js 
+
+
+#### Minification of the resulting webpack bundle 
+
+- bundle without minification is 19.5kb 
+- add new section to webpack.config.js called 'plugins' (lives at the same level as modules)
+````js
+const TerserPlugin = require('terser-webpack-plugin');
+
+// inside module.exports: 
+  plugins: [
+    new TerserPlugin()
+  ]
+````
+- need to install and import these plugins too 
+  - `npm install terser-webpack-plugin --save-dev` note: webpack 5 comes with this out of the box. 
+- bundle now is only 5.25kb! 
+- using TereserPlugin is the new way of minifiying js bundles. EArlier it was using uglify, but terserPlugin is recommended now. 
+
+
+#### Extracting CSS into a separate bundle with mini-css-extract-plugin 
+
+
+- Extracts CSS into a seperate file
+- bundling styles together with javascript code inside a single bundle.js is not good practice
+- our bundle file will become too big, and big files need more time to load 
+- we will extract css into seperate file generated along js bundle, why? 
+  - js bundle will be smaller, so faster to download 
+  - we can load several files in parrallel 
+
+
+- add new plugin to webpack.config.js:
+````js
+  plugins: [
+    new TerserPlugin(),
+    new MiniCssExtractPlugin({
+      filename: 'styles.css',
+    })
+  ]
+````
+- change the rules for css and scss: 
+  - replace `'style-loader'` with `miniCssExtractPlugin.loader`:
+  ````js
+  {
+    test: /\.css$/,
+    use: [
+      MiniCssExtractPlugin.loader, 'css-loader'
+    ]
+  },
+  {
+    test: /\.scss$/,
+    use: [
+      MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'
+    ]
+  }, 
+  ````
+  - import at the top of the webpack.config.js and `npm install mini-css-extract-plugin --save-dev`
+  - run `npm run build`
+  - now need to include this file at the top of the index.html 
+
+
+#### Browser Caching 
+
+
+- webpack can help us with browser caching
+- every time a browser loads a website, it downloads all the assets to load it
+- some websites require lots of javascript, and with every reload the browser downloads all the files from the internet
+  - can be an issue with slow internet, mobile devices etc
+- solution is browser caching. if the file doesn't change between reloads, the browser can save it and not download it. it goes to the cache
+- may lead to issues, i.e. if you fix a bug and the js file has changed 
+  - we need a mechanism for updating the cache, i.e. creating a new file with a new name each time you make a change 
+  - if the name changes, browsers will download the new version. 
+  - we don't need to change our file name manually, webpack can do this. 
+  - we can add md5 hash to the name of the file 
+- to get this to work, just add [contenthash] to the filename:
+````js
+  output: {
+    filename: 'bundle.[contenthash].js', // this is the change
+    path: path.resolve(__dirname, './dist'),
+    publicPath: 'dist/'
+  },
+````
+- this generates `bundle.<random characters>.js`, and the random characters stay the same as long as there is no js content change.
+- to have the css do the same thing, add [contenthash] to the plugins MiniCssExtractPlugin (the plugin responsible for generating the seperate css file):
+````js
+  plugins: [
+    new TerserPlugin(),
+    new MiniCssExtractPlugin({
+      filename: 'styles.[contenthash].css', // this is the change
+    })
+  ]
+````
+
+
+#### How to Clean Dist Folder before generating new bundles 
+
+
+- webpack has a plugin for this called 'clean-webpack-plugin'
+- every time you run a new build, webpack will removes the files from the output path folder 
+- need to `npm install clean-webpack-plugin --save-dev`
+- need to import in webpack.config.js: `const { CealnWebpackPlugin } = require('clean-webpack-plugin');`
+- need to add to plugins:
+````js
+  plugins: [
+    new TerserPlugin(),
+    new MiniCssExtractPlugin({
+      filename: 'styles.[contenthash].css',
+    }),
+    new CleanWebpackPlugin(),
+  ]
+````
+
+- this plugin can also clean non-output path folders:
+````js
+  plugins: [
+    new TerserPlugin(),
+    new MiniCssExtractPlugin({
+      filename: 'styles.[contenthash].css',
+    }),
+    new CleanWebpackPlugin({
+      cleanOnceBeforeBuildPatterns: [
+        // all patterns related to webpack output directory (in our case the dist folder)
+        '**/*', // removes all files and subfolders in dist folder 
+        path.join(process.cwd(), 'build/**/*') // removes all files and subfolders in the build folder 
+      ]
+    }),
+  ]
+````
+
+
+#### Generating HTML files automatically during webpack build process
+
+
+- we updated the bundle and styles name using the md6 hash with [contenthash], but nothing happened to our html file - which looks for just `bundle.js`: so now it will be broken 
+- to fix this, we need to change the references in index.html - but this is a manual process
+- webpack has a special plugin that updates the names of the references, it can even create the whole html file for us:
+  - `npm install html-webpack-plugin --save-dev`
+````js
+const HtmlWebpackPlugin = require('html-webpack-plugin')
+
+
+  },
+  plugins: [
+    new TerserPlugin(),
+    new MiniCssExtractPlugin({
+      filename: 'styles.[contenthash].css',
+    }),
+    new CleanWebpackPlugin(),
+    new HtmlWebpackPlugin()
+  ]
+````
+- run `npm run build` and see it has generated an index.html
+- might need to set the publicPath to an empty string in webpack.config now, as the bundles will be in the same folder as the html file 
+- we can delete the index.html file in the root now - we don't need it
+
+
+#### Customising Generated HTML files
+
+
+- adding the htmlWebpackPlugin changed the generated html file, earlier the page title was 'hello world' and now its 'webpack app'.
+- to get our title back, in webpack.config can do some options like so:
+````js
+    new HtmlWebpackPlugin({
+      title: 'Hello world',
+      filename: 'subfolder/custom_filename.html',
+      meta: {
+        description: 'Some description'
+      }
+    })
+````
+- there are more options listed on the github page of the plugin. https://github.com/jantimon/html-webpack-plugin/
+- you can even provide your own template for the html file to fully customise how it looks
+
+
+#### Fully customised html with template: Integration with Handlebars 
+
+
+- various template options here, we're using handlebars: https://github.com/jantimon/html-webpack-plugin/blob/main/docs/template-option.md
+- handlebars is a template engine for js, allowing you to seperate business logic from presentation
+- steps:
+  - create an index.hbs file in src, need to include variables like so:
+  ````html
+  <!DOCTYPE html>
+  <html>
+    <head>
+      <meta charset="utf-8">
+      <title>{{htmlWebpackPlugin.options.title}}</title>
+      <meta name="description" content="{{htmlWebpackPlugin.options.description}}">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body>
+    </body>
+  </html>
+  ````
+  - note: do not include bundle or css file, they will be added by webpack
+  - add template option to webpack config and include variables at the same level:
+  ````js
+      new HtmlWebpackPlugin({
+      template: 'src/index.hbs',
+      title: 'Hello world',
+      description: 'Some description'
+    })
+  ````
+  - create a new rule for .hbs files so webpack knows what to do with it:
+  ````js
+      {
+        test: /\.hbs$/,
+        use: [
+          'handlebars-loader'
+        ]
+      }
+  ````
+  - `npm install handlebars-loader --save-dev` && `npm install handlebars --save-dev`
+
+
+#### More Webpack Plugins 
+
+
+- there is a huge list of plugins here: https://webpack.js.org/plugins/
+
+
 ===
 
 
