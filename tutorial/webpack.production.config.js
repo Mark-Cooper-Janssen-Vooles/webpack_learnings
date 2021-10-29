@@ -1,25 +1,27 @@
-const path = require('path'); // using the old way of importing modules - you have to
-const TerserPlugin = require('terser-webpack-plugin');
+const path = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 
 module.exports = {
-  entry: './src/index.js', // entry point, which imports all other modules. webpack starts from this file when running the build process
+  entry: {
+    'hello-world': './src/hello-world.js',
+    'apples': './src/apples.js'
+  },
   output: {
-    filename: 'bundle.[contenthash].js',
-    path: path.resolve(__dirname, './dist'), // a library which creates an absolute path
+    filename: '[name].[contenthash].js',
+    path: path.resolve(__dirname, './dist'),
     publicPath: ''
   },
-  mode: 'none',
+  mode: 'production',
   module: {
     rules: [
       {
         test: /\.(png|jpg)$/, 
-        type: 'asset', // either type or use, asset modules require the type property.
+        type: 'asset',
         parser: {
           dataUrlCondition: {
-            maxSize: 3 * 1024 // 3kb
+            maxSize: 3 * 1024
           }
         }
       },
@@ -59,9 +61,8 @@ module.exports = {
     ]
   },
   plugins: [
-    new TerserPlugin(),
     new MiniCssExtractPlugin({
-      filename: 'styles.[contenthash].css',
+      filename: '[name].[contenthash].css',
     }),
     new CleanWebpackPlugin(),
     new HtmlWebpackPlugin({
