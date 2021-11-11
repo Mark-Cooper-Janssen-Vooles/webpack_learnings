@@ -6,7 +6,6 @@
 - Plugins
 - Production vs Development builds
 - Multiple page applications
-- Github repository
 - Webpack Integration with Node and Express
 - Module Federation
 - Integration with jQuery
@@ -530,16 +529,238 @@ const HtmlWebpackPlugin = require('html-webpack-plugin')
 ## Production vs Development builds
 
 
+- production builds usually require different setup than development builds
+  - we want production builds to be as fast as possible, and the bundles to be as small as possible
+  - during development we want more information - source maps etc. 
+- we will learn production vs development builds and how to make webpack serve both use cases
+
+
+#### Mode 
+
+
+- we have a special option called 'mode' in webpack.config.js 
+  - this optino enables certain built-in optimisations for production and development builds
+- only here from webpack 4 onwards
+- 3 options for `mode`: `'none'`, `'development'`, `'production'` 
+  - production mode enables a long list of plugins, including terser plugin: 1.36kb 
+    - more info here: https://webpack.js.org/configuration/mode/
+    - note it sets the process.env.NODE_ENV to 'production'
+  - development mode:  6.41kb 
+    - sets NODE_ENV to 'development'
+
+
+- development and production builds handle errors differently
+  - in development, it tells you in the console the exact line the error occured at (i.e. index.js line 15)
+    - because development mode uses source maps by default
+  - in production, it just tells you it came from bundle.js 
+
+
+#### Managing webpack config for production and development use cases
+
+
+- we would need to manually change the mode each time we want to develop vs deploy which is not convenient 
+- we can manage different configs for production and development builds, we just need two seperate config files. 
+- rename `webpack.config.js` to `webpack.production.config.js` and make a `webpack.dev.config.js`
+- for production config:
+  - remove terser plugin (its included by default) + import
+  - set mode to 'production' 
+- for development config:
+  - set mode to 'production'
+  - remove usages of `[contenthash]` as we'll not be serving this to customers so we wont need browser caching 
+  - remove terser plugin, we don't need to minifiy code during development as it takes longer
+  - we also don't need to minify css for the same reason, so remove mini-css-extract-plugin. 
+- then set up two different npm scripts:
+````json
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:production": "webpack --config webpack.production.config.js",
+    "build:dev": "webpack --config.webpack.dev.js"
+  },
+````
+
+
+#### Faster development with webpack dev server
+
+
+- we want to see changes in the browser quickly without having to run the build, and we can make this happen with webpack dev server
+- `npm install webpack-dev-server --save-dev`
+- in webpack.dev.config.js add: 
+````js
+  devServer: {
+    port: 9000, // the port devserver runs on 
+    static: {
+      directory: path.resolve(__dirname, './dist'), // where it will serve the files from 
+    },
+    devMiddleware: {
+      index: 'index.html', // the specific file to serve
+      writeToDisk: true // by default devServer generates files to memory and doesn't save them to disk, i.e. our dist folder would be empty. this often causes confusion, so recommended to enable. 
+    }
+  },
+````
+- change the npm script in package.json: 
+  - `"build:dev": "webpack serve --config webpack.dev.config.js --hot"`
+  - adding serve means to use webpack dev server, and --hot means enable hot module replacement
+- now when you make a js change, it auto-reloads! 
+
+
 ===
 
 
 ## Multiple page applications
 
 
-===
+- note: react is often a single page application "spa"
+- we'll split our js code into multiple bundles  
 
 
-## Github repository
+#### creating 2nd component  
+
+- just made another component 'apples-image'
+
+
+### creating 2nd page 
+
+
+- on the same level as index.js, create 'apples.js' 
+- rename index.js to 'hello-world.js'
+- now we've got two different js files that should be included in two different html pages 
+- lets tell webpack to produce two different html files for the two different bundles
+- in the webpack config file, we need to change the entry into two different files instead of one: 
+````js
+// this is in webpack.production.config.js 
+// from this:
+  entry: './src/index.js', 
+// to this: 
+  entry: {
+    'hello-world': './src/hello-world.js',
+    'apples': './src/apples.js'
+  },
+
+// need to change output filename too:
+// from this
+  output: {
+    filename: 'bundle.[contenthash].js',
+// to this: 
+  output: {
+    filename: '[name].[contenthash].js', // webpack takes the name specified in the entry object and puts it in [name]
+
+// do the same for css: 
+  plugins: [
+    new MiniCssExtractPlugin({
+      filename: 'styles.[contenthash].css',
+    }),
+````
+- now when you run `npm run build:prod` it wil lgenerate apples.something.js, apples.something.css, hello-world.something.js, hello-world.something.css, the image file, and index.html. 
+
+
+#### How to generate multiple HTML files
+
+
+- above we learnt how to split bundles, but both of them are included in the one html file (index.html)
+- if we want to generate two html files, we will need to duplicate the 'HtmlWebpackPlugin' plugin:
+````js
+    new HtmlWebpackPlugin({
+      filename: 'hello-world.html', // we need to add a filename for multiple html files
+      title: 'Hello world',
+      template: 'src/page-template.hbs',
+      description: 'Hello world description',
+      chunks: [ 'hello-world' ] // chunks enable us to specify which bundle to include which html
+    }),
+    new HtmlWebpackPlugin({
+      filename: 'apples.html',
+      template: 'src/page-template.hbs',
+      title: 'apples',
+      description: 'apples description',
+      chunks: ['apples'] // these names are specified in the entry object at the top
+    })
+````
+
+
+#### Extracting Common dependencies while code splitting
+
+
+- we've seen how we can split our JS code into multiple bundles 
+- if your pages depend on common library / framework:
+  - you probably don't want this library in every bundle
+  - i.e. if you use lodash in the heading component, its common among both bundles
+  - if you then run `npm run build:prod` both bundles increase largely in size (both ~70kb), webpack includes lodash in both files
+- webpack has a built in feature to extract lodash and any other common dependency into its own bundle 
+  - in webpack.production.config.js add a new option below 'mode':
+  ````js
+  mode: 'production',
+  optimization: {
+    splitChunks: {
+      chunks: 'all' // all chunks will be optimised 
+    }
+  },
+  ````
+  - when we run `npm run build:prod`, our bundles are now smaller ~2.5kb. but we have a 3rd large bundle (70kb) which includes lodash, which is shared by both smaller bundles. 
+  - in the generated html files, you can see it included the bundle with lodash as well
+- if we remove a usage of lodash in one of our bundle sets (i.e. in apples.js) and we run the prod build again, what happens?
+  - in the html, the lodash bundle is no longer included in the apples.html file. 
+  - webpack only includes it in the files that really need it
+
+
+#### Setting Custom Options for Code Spliting 
+
+
+- using react instead of lodash
+  - change usages of lodash to react, install react 
+  - run the webpack build
+  - notice: it didn't create a 3rd bundle!
+    - by default, webpack only extracts if the dependencies exceed 30kb. 
+- you can specify custom options for splitting chunks:
+  ````js
+  mode: 'production',
+  optimization: {
+    splitChunks: {
+      chunks: 'all',
+      minSize: 3000 // 3kb approx
+    }
+  },
+  ````
+
+
+#### How to setup development Environment for multiple page application
+
+
+- we've setup production config for multiple bundles
+- how to set it up for development for multiple apps/ bundles?
+  1. setup two entry points instead of one:
+  ````js
+  entry: {
+    'hello-world': './src/hello-world.js',
+    'apples': './src/apples.js'
+  },
+  ````
+  2. setup the name:
+  ````js
+  output: {
+    filename: '[name].js', // we don't need to use contenthash in developmentt (we don't care about caching)
+    path: path.resolve(__dirname, './dist'),
+    publicPath: ''
+  },
+  ````
+  3. we need two htmlWebpackPlugins now (as we have two html pages):
+  ````js
+  plugins: [
+    new CleanWebpackPlugin(),
+    new HtmlWebpackPlugin({
+      filename: 'hello-world.html',
+      title: 'Hello world',
+      template: 'src/page-template.hbs',
+      description: 'Hello world description',
+      chunks: [ 'hello-world' ]
+    }),
+    new HtmlWebpackPlugin({
+      filename: 'apples.html',
+      template: 'src/page-template.hbs',
+      title: 'apples',
+      description: 'apples description',
+      chunks: ['apples']
+    })
+  ]
+  ````
 
 
 ===
