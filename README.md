@@ -768,6 +768,64 @@ const HtmlWebpackPlugin = require('html-webpack-plugin')
 
 ## Webpack Integration with Node and Express
 
+- we have webpack config for most single page apps and multiple page apps 
+  - in single page app, we just have one html file
+  - in multipe page, we have multiple html files
+- when you wanna publish your website, most people create a backend / webserver too. 
+- we will learn how to create a backend and use it for our app too
+  - can use:
+    - node js, python, ruby, java, anything.
+- we will use nodejs and express
+- will cover both single and multiple page apps. 
+
+- will convert code from single page in section 5. 
+
+
+#### Integrating express into our app
+
+
+- this is in the 'single-page-app' folder in this repo. 
+- create server.js in src folder, add code
+- install express
+- add new npm package.json script 'start'
+
+
+#### Serving HTML pages via express
+
+
+- Update server.js:
+````js
+const express = require('express');
+const app = express();
+const path = require('path'); // path is a built-in module in nodejs (no need to npm install)
+const fs = require('fs');
+
+app.get('/', function (req, res) {
+  const pathToHtmlFile = path.resolve(__dirname, '../dist/index.html');
+  const contentFromHtmlFile = fs.readFileSync(pathToHtmlFile, 'utf-8');
+  res.send(contentFromHtmlFile);
+});
+
+app.listen(4000, function () {
+  console.log('Application is running on http://localhost:4000/')
+});
+````
+
+- now when you go to localhost:4000 it errors because express doesn't know how to handle fetching css and js from the index.html file 
+
+
+#### Handling JS and CSS via Express
+
+
+- Add this line to server.js: `app.use('/static', express.static(path.resolve(__dirname, '../dist')));`
+- need to update webpack with: 
+````js
+  output: {
+    filename: '[name].bundle.js',
+    path: path.resolve(__dirname, './dist'),
+    publicPath: '/static/' // this adds /static/ in front of the html file, so express can find it
+  },
+````
 
 ===
 
