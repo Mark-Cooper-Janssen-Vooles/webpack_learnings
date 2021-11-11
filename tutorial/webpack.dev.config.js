@@ -3,9 +3,12 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 
 module.exports = {
-  entry: './src/index.js',
+  entry: {
+    'hello-world': './src/hello-world.js',
+    'apples': './src/apples.js'
+  },
   output: {
-    filename: 'bundle.[contenthash].js',
+    filename: '[name].js', // we don't need to use contenthash in developmentt (we don't care about caching)
     path: path.resolve(__dirname, './dist'),
     publicPath: ''
   },
@@ -69,9 +72,18 @@ module.exports = {
   plugins: [
     new CleanWebpackPlugin(),
     new HtmlWebpackPlugin({
-      template: 'src/index.hbs',
+      filename: 'hello-world.html',
       title: 'Hello world',
-      description: 'Some description'
+      template: 'src/page-template.hbs',
+      description: 'Hello world description',
+      chunks: [ 'hello-world' ]
+    }),
+    new HtmlWebpackPlugin({
+      filename: 'apples.html',
+      template: 'src/page-template.hbs',
+      title: 'apples',
+      description: 'apples description',
+      chunks: ['apples']
     })
   ]
 }
