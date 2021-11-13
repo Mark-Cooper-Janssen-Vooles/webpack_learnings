@@ -8,7 +8,6 @@
 - Multiple page applications
 - Webpack Integration with Node and Express
 - Module Federation
-- Integration with jQuery
 - Using ESLint
 - Summary
 
@@ -833,10 +832,18 @@ app.listen(4000, function () {
 ## Module Federation
 
 
-===
+- we want two seperate applications with different webpack configs and dependencies listed 
+- again this section is using an express backend (not what we do - we just host the index.html and make requests to the APIs)
+- it breaks up two apps with two express files, one is apples one is hello-world
+- puts them on different localhosts. 
+- i.e. 'hello-wrld' runs in localhost:9001, 'apples' runs in localhost:9002
 
 
-## Integration with jQuery
+- module federation is only available at webpack version 5, and its out of the box. 
+- `const { ModuleFederationPlugin } = require('webpack').container;`
+
+- there is a section on here about using module federation to create micro frontends 
+- looked interesting but more advanced than what i need to know for now, so skipped over it.
 
 
 ===
@@ -844,6 +851,24 @@ app.listen(4000, function () {
 
 ## Using ESLint
 
+
+- ESLint can be used without webpack
+- a linter refers to tools that analyse source code to flag programming errors, bugs, stylistic erros and suspicious constructs 
+- can warn you about syntax errors, unused variables, spaces and formating conventions and much more 
+
+
+we will use ESLint: (added to 'tutorial' folder)
+1. install ESLint `npm install eslint --save-dev`
+2. in package.json, add the script: `"lint": "eslint ."` (basic eslint without any config options)
+3. create config file for eslint, its called `.eslintrc` and uses json format. 
+  - here we specify the rules, and according to those rules eslint will inspect our code
+  - https://eslint.org/docs/rules/
+4. having `"extends": "eslint:recommended"` in .eslintrc will enable all the rules with a check mark in front, the defaults 
+  - by default eslint checks js code against ECMA script 5 standards, but we use ECMA script 6. 
+  - setting sourceType stops eslint complaining about import and export variables 
+  - basically just run `npm run lint` and work through the errors, adding things to .eslintrc until it doesn't complain
+  - to get it to use classes, we'll need to add babel-eslint parser `npm install babel-eslint --save-dev` and add that to the parser file 
+  
 
 ===
 

@@ -1,0 +1,1 @@
+(()=>{var e=document.querySelector("body");document.createElement("h1").innerHTML="Webpack is awseome.",e.appendChild(App)})();
